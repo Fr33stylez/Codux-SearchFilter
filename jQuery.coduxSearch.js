@@ -6,6 +6,9 @@
  */
 (function ($)
 {
+
+
+
     //define all settings possible, and their default value
     var settings = {
         searchKeys : [], //keys from the filterData array
@@ -17,9 +20,9 @@
         callback:  false,
         outputFormat : 'original', //TODO: full , keysOnly,
         customSortKey : false,
-        suggestionThreshold : 45,
+        suggestionThreshold : 48,
         html  : true,
-        results : $("#results")
+        results : false
     };
 
     var newSettings;
@@ -45,7 +48,12 @@
         this.suggestions['results']=[];
         this.suggestions['probability']=[];
         this.$template = this.settings.results.html();
+        this.$results = this.settings.results;
         this.settings.results.html("");
+        this.html = this.settings.html;
+        this.searchKeys = this.settings.searchKeys;
+        this.callback = this.settings.callback;
+
     }
 
     /**
@@ -82,11 +90,13 @@
 
     CdxSearch.prototype.finalize = function ()
     {
-
-        this.doHTMLStuff();
-
-
-        this.settings.callback(this.outputData);
+        if(this.html) {
+            //console.log("do stuff");
+            this.doHTMLStuff();
+        }
+        if(this.callback) {
+            this.callback(this.outputData);
+        }
     };
 
     /**
@@ -274,11 +284,10 @@
      */
     CdxSearch.prototype.isSearchable = function(key)
     {
-        return true;
-        if(this.settings.searchKeys.length == 0)
+        if(this.searchKeys.length == 0)
             return true;
 
-      return $.inArray(key, this.settings.searchKeys) > -1;
+      return $.inArray(key, this.searchKeys) > -1;
     };
 
 
@@ -287,7 +296,6 @@
      */
     CdxSearch.prototype.scanVariables = function ($string,data)
     {
-        console.log(data);
         text = $string;
         inVar = false;
         matches = [];
@@ -332,11 +340,13 @@
 
     CdxSearch.prototype.doHTMLStuff = function()
     {
-        this.settings.results.html("");
+        console.log(this.results);
+
+        this.$results.html("");
         for( i in this.outputData['matches'])
         {
 
-            this.settings.results.append(this.scanVariables(this.$template,this.outputData['matches'][i]));
+            this.$results.append(this.scanVariables(this.$template,this.outputData['matches'][i]));
 
 
 
@@ -358,6 +368,7 @@
         if (options) {
             newSettings = $.extend(settings, options);
         }
+
 
         if (!this.coduxSearchArray)
         {
