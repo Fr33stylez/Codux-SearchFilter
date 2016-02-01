@@ -17,7 +17,8 @@
         callback:  false,
         outputFormat : 'original', //TODO: full , keysOnly,
         customSortKey : false,
-        suggestionThreshold : 45
+        suggestionThreshold : 45,
+        html  : true
     };
 
     var newSettings;
@@ -272,6 +273,61 @@
 
       return $.inArray(key, this.settings.searchKeys) > -1;
     };
+
+
+    /**
+     * scans through a text string for variables, reads data from those variables and returns a new string
+     */
+    CdxSearch.prototype.scanVariables = function ($string)
+    {
+        text = $string.text();
+        inVar = false;
+        matches = [];
+        matchCounter = -1;
+        counter = 0;
+        newText = "";
+        var data = [];
+
+        for(i in text)
+        {
+
+            if(text[i] == "{")
+            {
+
+                counter++;
+                if(counter == 2 )
+                {
+                    inVar = true;
+                    matchCounter++;
+                    matches[matchCounter] = "";
+                    counter = 0;
+                }
+            }else if(inVar)
+            {
+                if(text[i]=="}")
+                {
+                    counter++;
+                    if(counter ==2)
+                    {
+                        counter =0;
+                        inVar = false;
+
+
+                        newText += data[matches[matchCounter]];
+                    }
+                }else{
+
+                    matches[matchCounter] += text[i];
+                }
+
+            }else{
+                newText+= text[i];
+            }
+        }
+
+        return newText;
+    };
+
 
     /**
      * Actual plugin call from the outside world
