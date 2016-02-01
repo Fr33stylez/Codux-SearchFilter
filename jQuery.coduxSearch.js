@@ -18,7 +18,8 @@
         outputFormat : 'original', //TODO: full , keysOnly,
         customSortKey : false,
         suggestionThreshold : 45,
-        html  : true
+        html  : true,
+        results : $("#results")
     };
 
     var newSettings;
@@ -43,6 +44,8 @@
         this.suggestions=[];
         this.suggestions['results']=[];
         this.suggestions['probability']=[];
+        this.$template = this.settings.results.html();
+        this.settings.results.html("");
     }
 
     /**
@@ -79,6 +82,10 @@
 
     CdxSearch.prototype.finalize = function ()
     {
+
+        this.doHTMLStuff();
+
+
         this.settings.callback(this.outputData);
     };
 
@@ -278,22 +285,20 @@
     /**
      * scans through a text string for variables, reads data from those variables and returns a new string
      */
-    CdxSearch.prototype.scanVariables = function ($string)
+    CdxSearch.prototype.scanVariables = function ($string,data)
     {
-        text = $string.text();
+        console.log(data);
+        text = $string;
         inVar = false;
         matches = [];
         matchCounter = -1;
         counter = 0;
         newText = "";
-        var data = [];
 
         for(i in text)
         {
-
             if(text[i] == "{")
             {
-
                 counter++;
                 if(counter == 2 )
                 {
@@ -311,23 +316,33 @@
                     {
                         counter =0;
                         inVar = false;
-
-
-                        newText += data[matches[matchCounter]];
+                        newText += data[0][matches[matchCounter]];
                     }
                 }else{
-
                     matches[matchCounter] += text[i];
                 }
-
             }else{
                 newText+= text[i];
             }
         }
 
+
         return newText;
     };
 
+    CdxSearch.prototype.doHTMLStuff = function()
+    {
+        this.settings.results.html("");
+        for( i in this.outputData['matches'])
+        {
+
+            this.settings.results.append(this.scanVariables(this.$template,this.outputData['matches'][i]));
+
+
+
+        }
+
+    };
 
     /**
      * Actual plugin call from the outside world
