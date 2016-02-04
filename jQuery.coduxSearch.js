@@ -22,7 +22,8 @@
         customSortKey : false,
         suggestionThreshold : 48,
         html  : true,
-        results : false
+        results : false,
+        split : ["{","}"]
     };
 
     var newSettings;
@@ -53,6 +54,7 @@
         this.html = this.settings.html;
         this.searchKeys = this.settings.searchKeys;
         this.callback = this.settings.callback;
+        this.split = this.settings.split;
 
     }
 
@@ -296,6 +298,8 @@
      */
     CdxSearch.prototype.scanVariables = function ($string,data)
     {
+
+        // $string is our template html in string form ; data is our current data to get data from
         text = $string;
         inVar = false;
         matches = [];
@@ -303,11 +307,14 @@
         counter = 0;
         newText = "";
 
+        //loop through every character in the text
         for(i in text)
         {
-            if(text[i] == "{")
+            //check if the current character is a '{'
+            if(text[i] == this.split[0])
             {
                 counter++;
+                // if we have
                 if(counter == 2 )
                 {
                     inVar = true;
@@ -317,7 +324,7 @@
                 }
             }else if(inVar)
             {
-                if(text[i]=="}")
+                if(text[i]==this.split[1])
                 {
                     counter++;
                     if(counter ==2)
@@ -329,7 +336,7 @@
                             getData = data[0];
                             for (key in splitted)
                             {
-                                console.log
+                                console.log(splitted);
                                 getData = getData[splitted[key]];
                             }
                             newText += getData;
@@ -345,6 +352,7 @@
                     matches[matchCounter] += text[i];
                 }
             }else{
+
                 newText+= text[i];
             }
         }
@@ -402,5 +410,4 @@
 //TODO: pass on which key something is found
 //TODO: implement different sort types
 //TODO: implement different return types
-//TODO: Optional HTML generating
-//TODO: implement suggestions
+//TODO: search on nested keys-> dotseperation
