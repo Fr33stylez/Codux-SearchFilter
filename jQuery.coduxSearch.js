@@ -348,7 +348,11 @@
     };
 
 
-
+    /**
+     * run through the template blocks and fill them with code if needed
+     * @param data
+     * @returns {string}
+     */
     CdxSearch.prototype.renderTemplate = function(data)
     {
         completeTemplate = "";
