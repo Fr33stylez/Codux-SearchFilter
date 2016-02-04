@@ -7,8 +7,6 @@
 (function ($)
 {
 
-
-
     //define all settings possible, and their default value
     var settings = {
         searchKeys : [], //keys from the filterData array
@@ -22,7 +20,8 @@
         customSortKey : false,
         suggestionThreshold : 48,
         html  : true,
-        results : false
+        results : false,
+        split : ["{","}"]
     };
 
     var newSettings;
@@ -53,7 +52,11 @@
         this.html = this.settings.html;
         this.searchKeys = this.settings.searchKeys;
         this.callback = this.settings.callback;
+        this.split = this.settings.split;
+        this.htmlBlocks = [];
 
+
+        this.scanTemplate(this.$template);
     }
 
     /**
@@ -137,39 +140,39 @@
      */
     CdxSearch.prototype.logicalSearch = function()
     {
-            for(key in this.filterData)
+        for(key in this.filterData)
+        {
+            // Loop through each seperate array key
+            for (secKey in this.filterData[key])
             {
-                // Loop through each seperate array key
-                    for (secKey in this.filterData[key])
-                    {
-                        // Check if not an array
-                        if( typeof this.filterData[key][secKey] === 'string')
-                        {
-                            if(this.isSearchable(secKey)) {
-                                // Search for this.orginalData in curKey
-                                if (this.filterData[key][secKey].toLowerCase().search(this.$value.toLowerCase()) >= 0) {
-                                    // Push results to results variable
-                                    this.matches['results'][key] = this.filterData[key];
-                                    if (this.matches['probability'][key]) {
-                                        if (this.matches.probability[key] > this.getDistance(this.filterData[key][secKey], this.$value)) {
-                                            //console.log('hier');
-                                            this.matches['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value);
-                                        }
-                                    } else {
-                                        this.matches['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value);
-                                    }
-                                }else{
-                                    //if under suggestion threshold push it to suggestions
-                                    if (this.getDistance(this.filterData[key][secKey], this.$value)-50 > this.settings.suggestionThreshold)
-                                    {
-                                        this.suggestions['results'][key] = this.filterData[key];
-                                        this.suggestions['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value)-50;
-                                    }
+                // Check if not an array
+                if( typeof this.filterData[key][secKey] === 'string')
+                {
+                    if(this.isSearchable(secKey)) {
+                        // Search for this.orginalData in curKey
+                        if (this.filterData[key][secKey].toLowerCase().search(this.$value.toLowerCase()) >= 0) {
+                            // Push results to results variable
+                            this.matches['results'][key] = this.filterData[key];
+                            if (this.matches['probability'][key]) {
+                                if (this.matches.probability[key] > this.getDistance(this.filterData[key][secKey], this.$value)) {
+                                    //console.log('hier');
+                                    this.matches['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value);
                                 }
+                            } else {
+                                this.matches['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value);
+                            }
+                        }else{
+                            //if under suggestion threshold push it to suggestions
+                            if (this.getDistance(this.filterData[key][secKey], this.$value)-50 > this.settings.suggestionThreshold)
+                            {
+                                this.suggestions['results'][key] = this.filterData[key];
+                                this.suggestions['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value)-50;
                             }
                         }
                     }
+                }
             }
+        }
         this.sort();
     };
 
@@ -181,7 +184,6 @@
     CdxSearch.prototype.sort = function() {
 
         this.stitch();
-
         this.stitched['matches'] = this.stitched['matches'].sort(this.probabilitySort);
         this.stitched['suggestions'] = this.stitched['suggestions'].sort(this.probabilitySort);
 
@@ -287,68 +289,105 @@
         if(this.searchKeys.length == 0)
             return true;
 
-      return $.inArray(key, this.searchKeys) > -1;
+        return $.inArray(key, this.searchKeys) > -1;
     };
 
 
-    /**
-     * scans through a text string for variables, reads data from those variables and returns a new string
-     */
-    CdxSearch.prototype.scanVariables = function ($string,data)
-    {
-        text = $string;
-        inVar = false;
-        matches = [];
-        matchCounter = -1;
-        counter = 0;
-        newText = "";
-
-        for(i in text)
+    CdxSearch.prototype.scanTemplate = function ($string) {
         {
-            if(text[i] == "{")
-            {
-                counter++;
-                if(counter == 2 )
-                {
-                    inVar = true;
-                    matchCounter++;
-                    matches[matchCounter] = "";
-                    counter = 0;
-                }
-            }else if(inVar)
-            {
-                if(text[i]=="}")
-                {
+
+            // $string is our template html in string form ; data is our current data to get data from
+            text = $string;
+            inVar = false;
+            matches = [];
+            matchCounter = -1;
+            counter = 0;
+            newText = "";
+
+            htmlBlocks = [];
+            htmlBlockCounter = 0;
+            htmlBlocks[htmlBlockCounter] = "";
+
+
+            //loop through every character in the text
+            for (i in text) {
+                //check if the current character is a '{'
+                if (text[i] == this.split[0]) {
                     counter++;
-                    if(counter ==2)
-                    {
-                        counter =0;
-                        inVar = false;
-                        newText += data[0][matches[matchCounter]];
+                    // if we have
+                    if (counter == 2) {
+                        inVar = true;
+                        matchCounter++;
+                        matches[matchCounter] = "";
+                        counter = 0;
+
+                        htmlBlockCounter++;
+                        htmlBlocks[htmlBlockCounter] = "";
                     }
-                }else{
-                    matches[matchCounter] += text[i];
+                } else if (inVar) {
+                    if (text[i] == this.split[1]) {
+                        counter++;
+                        if (counter == 2) {
+                            counter = 0;
+                            inVar = false;
+                            htmlBlocks[htmlBlockCounter] += "{{" + matches[matchCounter] + "}}";
+                            htmlBlockCounter++;
+                            htmlBlocks[htmlBlockCounter] = "";
+                        }
+                    } else {
+                        matches[matchCounter] += text[i];
+                    }
+                } else {
+                    htmlBlocks[htmlBlockCounter] += text[i];
                 }
-            }else{
-                newText+= text[i];
+            }
+            this.htmlBlocks = htmlBlocks;
+
+            //console.log(htmlBlocks);
+        }
+    };
+
+
+
+    CdxSearch.prototype.renderTemplate = function(data)
+    {
+        completeTemplate = "";
+
+        for(i in this.htmlBlocks)
+        {
+            var string = this.htmlBlocks[i].trim()
+            if( string.substring(0,2) == this.split[0]+this.split[0] && string.slice(-2) == this.split[1]+this.split[1])
+            {
+               var variable = string.slice(2,-2);
+                if(splitted = variable.split('.'))
+                {
+                    getData = data[0];
+                    for (key in splitted)
+                    {
+                        getData = getData[splitted[key]];
+                    }
+                    completeTemplate+= getData;
+                }
+                else{
+                    completeTemplate += data[0][matches[matchCounter]];
+                }
+
+            }else
+            {
+                completeTemplate += this.htmlBlocks[i];
             }
         }
-
-
-        return newText;
+        return completeTemplate;
     };
 
     CdxSearch.prototype.doHTMLStuff = function()
     {
-        //console.log(this.results);
+        //console.log("test",this.htmlBlocks);
 
         this.$results.html("");
         for( i in this.outputData['matches'])
         {
-
-            this.$results.append(this.scanVariables(this.$template,this.outputData['matches'][i]));
-
-
+            this.$results.append(this.renderTemplate(this.outputData['matches'][i]));
 
         }
 
@@ -387,5 +426,4 @@
 //TODO: pass on which key something is found
 //TODO: implement different sort types
 //TODO: implement different return types
-//TODO: Optional HTML generating
-//TODO: implement suggestions
+//TODO: search on nested keys-> dotseperation
