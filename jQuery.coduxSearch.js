@@ -340,7 +340,7 @@
 
     CdxSearch.prototype.doHTMLStuff = function()
     {
-        console.log(this.results);
+        //console.log(this.results);
 
         this.$results.html("");
         for( i in this.outputData['matches'])
