@@ -140,41 +140,67 @@
      */
     CdxSearch.prototype.logicalSearch = function()
     {
+
         for(key in this.filterData)
         {
-            // Loop through each seperate array key
-            for (secKey in this.filterData[key])
-            {
-                // Check if not an array
-                if( typeof this.filterData[key][secKey] === 'string')
-                {
-                    if(this.isSearchable(secKey)) {
-                        // Search for this.orginalData in curKey
-                        if (this.filterData[key][secKey].toLowerCase().search(this.$value.toLowerCase()) >= 0) {
-                            // Push results to results variable
-                            this.matches['results'][key] = this.filterData[key];
-                            if (this.matches['probability'][key]) {
-                                if (this.matches.probability[key] > this.getDistance(this.filterData[key][secKey], this.$value)) {
-                                    //console.log('hier');
-                                    this.matches['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value);
-                                }
-                            } else {
-                                this.matches['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value);
-                            }
-                        }else{
-                            //if under suggestion threshold push it to suggestions
-                            if (this.getDistance(this.filterData[key][secKey], this.$value)-50 > this.settings.suggestionThreshold)
-                            {
-                                this.suggestions['results'][key] = this.filterData[key];
-                                this.suggestions['probability'][key] = this.getDistance(this.filterData[key][secKey], this.$value)-50;
-                            }
-                        }
-                    }
-                }
-            }
+            this.recursiveKeyChecker(key,this.filterData[key]);
         }
+
         this.sort();
     };
+
+
+    CdxSearch.prototype.recursiveKeyChecker = function(key,data)
+    {
+        for(secKey in data)
+        {
+            if( typeof data[secKey] === 'string')
+            {
+                this.matchFinder(data,key,secKey)
+            }else if( data[secKey].constructor === Array || typeof data[secKey] === 'object')
+            {
+                console.log('deeper');
+                this.recursiveKeyChecker(key,data[secKey]);
+            }
+            console.log(data[secKey]);
+        }
+
+
+    };
+
+
+        CdxSearch.prototype.matchFinder = function(data,key,secKey)
+        {
+
+        console.log(secKey);
+          if(this.isSearchable(secKey))
+          {
+              if (data[secKey].toLowerCase().search(this.$value.toLowerCase()) >= 0 )
+              {
+
+                  this.matches['results'][key] = this.filterData[key];
+                  if(this.matches['probability'][key])
+                  {
+                      if (this.matches['probability'][key] > this.getDistance(data[secKey],this.$value)){
+                          this.matches['probability'][key] = this.getDistance(data[secKey],this.$value);
+                      }
+                  }else{
+                      this.matches['probability'][key] = this.getDistance(data[secKey],this.$value);
+                  }
+
+              }else{
+                      //if under suggestion threshold push it to suggestions
+                      if (this.getDistance(data[secKey], this.$value)-50 > this.settings.suggestionThreshold)
+                      {
+                          this.suggestions['results'][key] = this.filterData[key];
+                          this.suggestions['probability'][key] = this.getDistance(data[secKey], this.$value)-50;
+                      }
+              }
+          }
+
+
+        };
+
 
     /**
      * sort our data
